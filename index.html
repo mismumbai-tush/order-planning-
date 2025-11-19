@@ -294,16 +294,11 @@
         /** Utility to format large numbers as K/M or normal format */
         const formatDisplayValue = (value, displayFormat = 'auto') => {
             if (displayFormat === 'k') {
-                return (value / 1000).toFixed(1) + 'K';
+                return (value / 1000).toFixed(1) + ' K';
             } else if (displayFormat === 'm') {
-                return (value / 1000000).toFixed(1) + 'M';
-            } else if (displayFormat === 'auto') {
-                if (value >= 1000000) {
-                    return (value / 1000000).toFixed(1) + 'M';
-                } else if (value >= 1000) {
-                    return (value / 1000).toFixed(1) + 'K';
-                }
+                return (value / 1000000).toFixed(1) + ' M';
             }
+            // Auto mode and default: show normal formatted numbers
             return value.toLocaleString('en-IN');
         };
 
