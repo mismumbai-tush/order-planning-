@@ -656,8 +656,8 @@
 
         // --- NEW PLAN HANDLERS & UI ---
 
-        const renderCustomerInput = (customer = { name: '', visitStatus: 'Pending', remark: '', isNew: true }, index, isActual = false) => {
-            const isCompleted = isActual && (customer.visitStatus === 'Visit Done' || customer.visitStatus === 'Not Visit');
+        const renderCustomerInput = (customer = { name: '', visitStatus: 'Pending', remark: '', isNew: true }, index, isActual = false, allowEdit = true) => {
+            const isCompleted = isActual && !allowEdit && (customer.visitStatus === 'Visit Done' || customer.visitStatus === 'Not Visit');
             
             if (!isActual) {
                 // New Plan: Simple customer name only, no remove button
@@ -1408,7 +1408,7 @@
                                 </button>
                             </div>
                             <div id="actual-customer-list" class="space-y-3">
-                                ${plan.customers.map((c, index) => renderCustomerInput(c, index, true)).join('')}
+                                ${plan.customers.map((c, index) => renderCustomerInput(c, index, true, true)).join('')}
                             </div>
                         </div>
 
@@ -1546,7 +1546,7 @@
                             </button>
                         </div>
                         <div id="modal-actual-customer-list" class="space-y-3 max-h-40 overflow-y-auto">
-                            ${customers.map((c, index) => renderCustomerInput(c, index, true)).join('')}
+                            ${customers.map((c, index) => renderCustomerInput(c, index, true, true)).join('')}
                         </div>
                     </div>
 
@@ -1806,7 +1806,8 @@
             // Show metrics from ALL plans (both Planned and Completed) for real-time dashboard
             const allPlans = basePlans; // For all metrics
             const metrics = calculateMetrics(allPlans); // Use all plans for KPIs, not just completed
-            const achievement = metrics.totalTarget > 0 ? ((metrics.totalActual / metrics.totalTarget) * 100).toFixed(2) : '0.00';
+            const achievementValue = metrics.totalTarget > 0 ? Math.round((metrics.totalActual / metrics.totalTarget) * 100) : '0';
+            const achievement = Math.min(achievementValue, 100); // Cap at 100%
 
             return `
                 <div class="space-y-8">
@@ -2222,7 +2223,8 @@
 
                                     const totalTarget = unitTargets.reduce((sum, ut) => sum + ut.target, 0);
                                     const totalActual = unitActuals.reduce((sum, ua) => sum + ua.actual, 0);
-                                    const achievement = totalTarget > 0 ? ((totalActual / totalTarget) * 100).toFixed(2) : '0.00';
+                                    const achievementValue = totalTarget > 0 ? Math.round((totalActual / totalTarget) * 100) : '0';
+                                    const achievement = Math.min(achievementValue, 100); // Cap at 100%
                                     
                                     const visitDone = customers.filter(c => c.visitStatus === 'Visit Done').length;
                                     const visitNot = customers.filter(c => c.visitStatus === 'Not Visit').length;
@@ -2237,12 +2239,17 @@
                                             </td>
                                             <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">${totalTarget.toLocaleString('en-IN')}</td>
                                             <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">${totalActual.toLocaleString('en-IN')}</td>
-                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-semibold ${parseFloat(achievement) >= 100 ? 'text-green-600' : 'text-red-600'}">${achievement}%</td>
+                                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right font-semibold ${achievement >= 100 ? 'text-green-600' : 'text-red-600'}">${achievement}%</td>
                                             <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${visitSummary}</td>
                                             <td class="px-4 py-2 whitespace-nowrap text-sm space-x-2">
                                                 <button onclick="viewReportDetails('${plan.id}')" class="text-primary hover:text-blue-700 font-medium">
                                                     View Details
                                                 </button>
+                                                ${userRole === 'Master' || userRole === 'Branch Head' ? `
+                                                    <button onclick="editActualFromReport('${plan.id}')" class="text-blue-600 hover:text-blue-900 font-medium">
+                                                        Edit Actual
+                                                    </button>
+                                                ` : ''}
                                                 ${userRole === 'Master' ? `
                                                     <button onclick="deleteReportRow('${plan.id}')" class="text-red-600 hover:text-red-900 font-medium">
                                                         Delete
@@ -2400,7 +2407,8 @@
 
             const totalTarget = unitTargets.reduce((sum, ut) => sum + ut.target, 0);
             const totalActual = unitActuals.reduce((sum, ua) => sum + ua.actual, 0);
-            const achievement = totalTarget > 0 ? ((totalActual / totalTarget) * 100).toFixed(2) : '0.00';
+            const achievementValue = totalTarget > 0 ? Math.round((totalActual / totalTarget) * 100) : '0';
+            const achievement = Math.min(achievementValue, 100); // Cap at 100%
             const userRole = state.userProfile.role;
 
             const customerRows = customers.map((c, index) => {
@@ -2424,13 +2432,14 @@
 
             const unitRows = unitActuals.map(ua => {
                 const unitTarget = unitTargets.find(ut => ut.unit === ua.unit)?.target || 0;
-                const unitAchievement = unitTarget > 0 ? ((ua.actual / unitTarget) * 100).toFixed(2) : '0.00';
+                const unitAchievementValue = unitTarget > 0 ? Math.round((ua.actual / unitTarget) * 100) : '0';
+                const unitAchievement = Math.min(unitAchievementValue, 100); // Cap at 100%
                 return `
                     <tr>
                         <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-secondary">${ua.unit}</td>
                         <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">${unitTarget.toLocaleString('en-IN')}</td>
                         <td class="px-4 py-2 whitespace-nowrap text-sm text-primary text-right">${ua.actual.toLocaleString('en-IN')}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold ${parseFloat(unitAchievement) >= 100 ? 'text-green-600' : 'text-red-600'} text-right">${unitAchievement}%</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-semibold ${unitAchievement >= 100 ? 'text-green-600' : 'text-red-600'} text-right">${unitAchievement}%</td>
                     </tr>
                 `;
             }).join('');
@@ -2446,7 +2455,7 @@
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm bg-gray-50 p-4 rounded-lg shadow-inner">
                         <p><strong>Total Target:</strong> <span class="text-secondary font-semibold">${totalTarget.toLocaleString('en-IN')} Rs</span></p>
                         <p><strong>Total Actual:</strong> <span class="text-primary font-semibold">${totalActual.toLocaleString('en-IN')} Rs</span></p>
-                        <p><strong>Total Achievement:</strong> <span class="${parseFloat(achievement) >= 100 ? 'text-green-600' : 'text-red-600'} font-semibold">${achievement}%</span></p>
+                        <p><strong>Total Achievement:</strong> <span class="${achievement >= 100 ? 'text-green-600' : 'text-red-600'} font-semibold">${achievement}%</span></p>
                         <p><strong>Status:</strong> <span class="text-green-600 font-semibold">${plan.status}</span></p>
                     </div>
 
@@ -2500,7 +2509,8 @@
             const flatData = reportsToDownload.map(plan => {
                 const totalTarget = plan.unitTargets.reduce((sum, ut) => sum + ut.target, 0);
                 const totalActual = plan.unitActuals.reduce((sum, ua) => sum + ua.actual, 0);
-                const achievement = totalTarget > 0 ? ((totalActual / totalTarget) * 100).toFixed(2) : '0.00';
+                const achievementValue = totalTarget > 0 ? Math.round((totalActual / totalTarget) * 100) : '0';
+                const achievement = Math.min(achievementValue, 100); // Cap at 100%
 
                 const baseData = {
                     id: plan.id,
@@ -2641,6 +2651,73 @@
         };
 
         // --- REPORT MANAGEMENT ---
+
+        window.editActualFromReport = async (planId) => {
+            try {
+                const plansRef = db.collection(`artifacts/${appId}/public/data/plans`);
+                const planDoc = await plansRef.doc(planId).get();
+                
+                if (!planDoc.exists) {
+                    showModal('Error', 'Plan not found.');
+                    return;
+                }
+                
+                const plan = {
+                    id: planId,
+                    ...planDoc.data()
+                };
+                
+                // Change status back to 'Planned' so it appears in Actual tab for editing
+                await plansRef.doc(planId).update({ status: 'Planned' });
+                
+                // Directly set state.actualDetails with the fetched plan data
+                // This ensures all customer data (name, visitStatus, remark) is loaded
+                state.actualDetails = {
+                    id: planId,
+                    ...plan
+                };
+                
+                // Parse JSON strings if needed
+                if (typeof state.actualDetails.customers === 'string') {
+                    try {
+                        state.actualDetails.customers = JSON.parse(state.actualDetails.customers);
+                    } catch (e) {
+                        console.warn("Could not parse customers:", e);
+                        state.actualDetails.customers = [];
+                    }
+                }
+                
+                if (typeof state.actualDetails.unitTargets === 'string') {
+                    try {
+                        state.actualDetails.unitTargets = JSON.parse(state.actualDetails.unitTargets);
+                    } catch (e) {
+                        console.warn("Could not parse unitTargets:", e);
+                        state.actualDetails.unitTargets = [];
+                    }
+                }
+                
+                if (typeof state.actualDetails.unitActuals === 'string') {
+                    try {
+                        state.actualDetails.unitActuals = JSON.parse(state.actualDetails.unitActuals);
+                    } catch (e) {
+                        console.warn("Could not parse unitActuals:", e);
+                        state.actualDetails.unitActuals = [];
+                    }
+                }
+                
+                // Navigate to Actual tab to show it in Pending Actualization list
+                navigate('Actual');
+                
+                // Wait a moment for render to complete, then open the modal form
+                setTimeout(() => {
+                    openActualModalForm(planId);
+                }, 500);
+                
+            } catch (error) {
+                console.error("Error loading plan for editing:", error);
+                showModal('Error', `Could not load plan: ${error.message}`);
+            }
+        };
         
         window.deleteReportRow = async (planId) => {
             const confirmDelete = window.confirm('Are you sure you want to delete this report? This action cannot be undone.');
