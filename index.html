@@ -672,10 +672,10 @@
                     </div>
                 `;
             } else {
-                // Actual Tab: Customer name with status and remark
+                // Actual Tab: Customer name with status and remark + save button
                 return `
                     <div class="p-3 border border-gray-200 rounded-lg bg-gray-50 customer-row" data-index="${index}">
-                        <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
+                        <div class="grid grid-cols-1 md:grid-cols-8 gap-3 items-end">
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Customer Name</label>
                                 <input type="text" name="customer-name" value="${customer.name}" ${isCompleted ? 'disabled' : ''} class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-primary focus:border-primary ${isCompleted ? 'bg-gray-100' : ''}">
@@ -688,13 +688,16 @@
                                     <option value="Not Visit" ${customer.visitStatus === 'Not Visit' ? 'selected' : ''}>Not Visit</option>
                                 </select>
                             </div>
-                            <div class="md:col-span-2">
+                            <div class="md:col-span-3">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Remark (Max ${MAX_REMARK_LENGTH})</label>
                                 <textarea name="remark" maxlength="${MAX_REMARK_LENGTH}" ${isCompleted ? 'disabled' : ''} class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-primary focus:border-primary ${isCompleted ? 'bg-gray-100' : ''}">${customer.remark}</textarea>
                             </div>
                             ${!isCompleted ? `
-                                <div class="md:col-span-1 flex items-end">
-                                    <button type="button" onclick="removeCustomerRow(${index}, ${isActual})" class="w-full md:w-auto p-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200 transition">
+                                <div class="md:col-span-2 flex items-end gap-2">
+                                    <button type="button" onclick="saveCustomerRemark(${index})" class="flex-1 p-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200 transition font-medium" title="Save remark only (dont complete plan)">
+                                        Save Remark
+                                    </button>
+                                    <button type="button" onclick="removeCustomerRow(${index}, ${isActual})" class="flex-1 p-2 bg-red-100 text-red-600 rounded-lg text-sm hover:bg-red-200 transition">
                                         Remove
                                     </button>
                                 </div>
@@ -1188,7 +1191,15 @@
                 <div class="space-y-6">
                     ${renderActualFilters()}
 
-                    <h2 class="text-2xl font-extrabold text-secondary">Pending Actualization (${plannedTasks.length})</h2>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-extrabold text-secondary">Pending Actualization (${plannedTasks.length})</h2>
+                        ${(userRole === 'Master' || userRole === 'Branch Head') ? `
+                            <button id="download-planning-actual-csv" class="flex items-center bg-primary text-white py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                Download Report
+                            </button>
+                        ` : ''}
+                    </div>
                     <div class="overflow-x-auto bg-white rounded-xl shadow-2xl">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -1238,6 +1249,7 @@
             const allPlans = filterPlansByRole(state.plans);
             const employeeNames = [...new Set(allPlans.map(p => p.salespersonName))].sort();
             const userRole = state.userProfile?.role;
+            const userBranch = state.userProfile?.branch;
             
             // For Sales Person role, hide employee and branch filters (they only see their own data)
             let filterOptions = [];
@@ -1247,8 +1259,15 @@
                     { id: 'act-month', label: 'Month', type: 'select', options: Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('en', { month: 'long' })) },
                     { id: 'act-year', label: 'Year', type: 'select', options: ['2024', '2025', '2026'] },
                 ];
+            } else if (userRole === 'Branch Head') {
+                // Branch Head only sees their own branch + employee, month, year filters (no branch filter)
+                filterOptions = [
+                    { id: 'act-employee', label: 'Employee Name', type: 'select', options: employeeNames },
+                    { id: 'act-month', label: 'Month', type: 'select', options: Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('en', { month: 'long' })) },
+                    { id: 'act-year', label: 'Year', type: 'select', options: ['2024', '2025', '2026'] },
+                ];
             } else {
-                // Master and Branch Head see all filters
+                // Master sees all filters
                 filterOptions = [
                     { id: 'act-employee', label: 'Employee Name', type: 'select', options: employeeNames },
                     { id: 'act-branch', label: 'Branch', type: 'select', options: BRANCHES },
@@ -1557,25 +1576,28 @@
                                 <thead class="bg-gray-50">
                                     <tr>
                                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">Unit</th>
-                                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">Target</th>
+                                        <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">Target (Editable for Admin)</th>
                                         <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">Actual</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-200" id="modal-unit-actual-table-body">
-                                    ${unitActuals.map(ua => `
+                                    ${unitActuals.map(ua => {
+                                        const isEditableTarget = state.userProfile?.role === 'Master' || state.userProfile?.role === 'Branch Head';
+                                        return `
                                         <tr>
                                             <td class="px-3 py-2 font-medium text-secondary">${ua.unit}</td>
-                                            <td class="px-3 py-2 text-right text-gray-500">${ua.target.toLocaleString('en-IN')}</td>
+                                            <td class="px-3 py-2 text-right">
+                                                ${isEditableTarget ? `<input type="number" min="0" data-unit="${ua.unit}" name="unit-target" value="${ua.target}" class="w-full p-1 border border-gray-300 rounded text-sm text-right modal-target-input focus:ring-primary focus:border-primary">` : `<span class="text-gray-500">${ua.target.toLocaleString('en-IN')}</span>`}
+                                            </td>
                                             <td class="px-3 py-2 text-right">
                                                 <input type="number" min="0" data-unit="${ua.unit}" name="unit-actual" value="${ua.actual}" class="w-full p-1 border border-gray-300 rounded text-sm text-right modal-actual-input focus:ring-primary focus:border-primary">
                                             </td>
                                         </tr>
-                                    `).join('')}
+                                    `}).join('')}
                                 </tbody>
                             </table>
                         </div>
                     </div>
-
                     <div class="flex justify-end space-x-3 pt-4">
                         <button type="button" onclick="closeModal()" class="py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
                             Cancel
@@ -1661,8 +1683,9 @@
                 // Check if all planned customers have been accounted for (or check if at least one status is 'Visit Done' to mark as completed)
                 const isPlanCompleted = actualCustomers.some(c => c.visitStatus === 'Visit Done' || c.visitStatus === 'Not Visit');
                 
-                // 2. Extract Unit Actuals
+                // 2. Extract Unit Actuals and updated Targets
                 const inputSelector = isModal ? '.modal-actual-input' : '.actual-input';
+                const targetInputSelector = isModal ? '.modal-target-input' : '.target-input';
                 const tableSelector = isModal ? '#modal-unit-actual-table-body' : '#unit-actual-table-body';
                 const unitActualInputs = document.querySelectorAll(`${tableSelector} ${inputSelector}`);
                 console.log("🔍 Looking for unit inputs with selector:", `${tableSelector} ${inputSelector}`);
@@ -1674,9 +1697,13 @@
                 });
                 
                 const unitActuals = Array.from(unitActualInputs).map(input => {
+                    const unit = input.getAttribute('data-unit');
+                    const targetInputElement = document.querySelector(`${tableSelector} [data-unit="${unit}"][name="unit-target"]`);
+                    const targetValue = targetInputElement ? parseInt(targetInputElement.value) : (state.actualDetails.unitTargets.find(ut => ut.unit === unit)?.target || 0);
+                    
                     const unitData = {
-                        unit: input.getAttribute('data-unit'),
-                        target: state.actualDetails.unitTargets.find(ut => ut.unit === input.getAttribute('data-unit'))?.target || 0,
+                        unit: unit,
+                        target: targetValue,
                         actual: parseInt(input.value) || 0
                     };
                     console.log("  Unit extracted:", unitData);
@@ -1890,15 +1917,28 @@
             // Get unique employee names from all plans
             const allPlans = filterPlansByRole(state.plans);
             const employeeNames = [...new Set(allPlans.map(p => p.salespersonName))].sort();
+            const userRole = state.userProfile?.role;
+            const userBranch = state.userProfile?.branch;
             
             console.log("📋 Employee Names Available:", employeeNames);
             
-            const filterOptions = [
-                { id: 'dash-employee', label: 'Employee Name', type: 'select', options: employeeNames },
-                { id: 'dash-branch', label: 'Branch', type: 'select', options: BRANCHES },
-                { id: 'dash-month', label: 'Month', type: 'select', options: Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('en', { month: 'long' })) },
-                { id: 'dash-year', label: 'Year', type: 'select', options: ['2024', '2025', '2026'] },
-            ];
+            let filterOptions = [];
+            if (userRole === 'Branch Head') {
+                // Branch Head doesn't see branch filter (only their branch)
+                filterOptions = [
+                    { id: 'dash-employee', label: 'Employee Name', type: 'select', options: employeeNames },
+                    { id: 'dash-month', label: 'Month', type: 'select', options: Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('en', { month: 'long' })) },
+                    { id: 'dash-year', label: 'Year', type: 'select', options: ['2024', '2025', '2026'] },
+                ];
+            } else {
+                // Master sees all filters
+                filterOptions = [
+                    { id: 'dash-employee', label: 'Employee Name', type: 'select', options: employeeNames },
+                    { id: 'dash-branch', label: 'Branch', type: 'select', options: BRANCHES },
+                    { id: 'dash-month', label: 'Month', type: 'select', options: Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('en', { month: 'long' })) },
+                    { id: 'dash-year', label: 'Year', type: 'select', options: ['2024', '2025', '2026'] },
+                ];
+            }
 
             return `
                 <div class="bg-white p-4 rounded-xl shadow-lg">
@@ -2277,6 +2317,7 @@
             const allPlans = filterPlansByRole(state.plans);
             const employeeNames = [...new Set(allPlans.map(p => p.salespersonName))].sort();
             const userRole = state.userProfile?.role;
+            const userBranch = state.userProfile?.branch;
             
             // For Sales Person role, hide employee and branch filters (they only see their own data)
             let filterOptions = [];
@@ -2287,8 +2328,16 @@
                     { id: 'rep-year', label: 'Year', type: 'select', options: ['2024', '2025', '2026'] },
                     { id: 'rep-visit-status', label: 'Visit Status', type: 'select', options: ['Visit Done', 'Not Visit', 'Pending'] },
                 ];
+            } else if (userRole === 'Branch Head') {
+                // Branch Head only sees their own branch + employee, month, year, visit status filters (no branch filter)
+                filterOptions = [
+                    { id: 'rep-employee', label: 'Employee Name', type: 'select', options: employeeNames },
+                    { id: 'rep-month', label: 'Month', type: 'select', options: Array.from({ length: 12 }, (_, i) => new Date(0, i).toLocaleString('en', { month: 'long' })) },
+                    { id: 'rep-year', label: 'Year', type: 'select', options: ['2024', '2025', '2026'] },
+                    { id: 'rep-visit-status', label: 'Visit Status', type: 'select', options: ['Visit Done', 'Not Visit', 'Pending'] },
+                ];
             } else {
-                // Master and Branch Head see all filters
+                // Master sees all filters
                 filterOptions = [
                     { id: 'rep-employee', label: 'Employee Name', type: 'select', options: employeeNames },
                     { id: 'rep-branch', label: 'Branch', type: 'select', options: BRANCHES },
@@ -2495,6 +2544,164 @@
                     </div>
                 </div>
             `;
+        };
+
+        // Download PLANNING Report for Actual tab (Planning data only - customers & targets)
+        window.downloadPlanningVsActualCSV = () => {
+            // Apply current filters to get filtered plans
+            let filteredPlans = filterPlansByRole(state.plans);
+            
+            // Apply Actual tab specific filters
+            if (state.filters.actual.employee) {
+                filteredPlans = filteredPlans.filter(p => p.salespersonName === state.filters.actual.employee);
+            }
+            if (state.filters.actual.branch && state.userProfile?.role === 'Master') {
+                filteredPlans = filteredPlans.filter(p => p.branch === state.filters.actual.branch);
+            }
+            if (state.filters.actual.month) {
+                filteredPlans = filteredPlans.filter(p => {
+                    const planMonth = new Date(p.startDate.toMillis ? p.startDate.toMillis() : p.startDate).toLocaleString('en', { month: 'long' });
+                    return planMonth === state.filters.actual.month;
+                });
+            }
+            if (state.filters.actual.year) {
+                filteredPlans = filteredPlans.filter(p => {
+                    const planYear = new Date(p.startDate.toMillis ? p.startDate.toMillis() : p.startDate).getFullYear().toString();
+                    return planYear === state.filters.actual.year;
+                });
+            }
+
+            if (filteredPlans.length === 0) {
+                showModal('Download Failed', 'No plans found with applied filters.');
+                return;
+            }
+
+            // Get current month for sheet naming
+            const currentMonth = new Date().toLocaleString('en', { month: 'long' });
+            
+            // SHEET 1: Customer Planning Data (Customer names only - no visit status/remarks yet)
+            const customerSheet = [];
+            customerSheet.push(['ID', 'Sales Person Name', 'Branch', 'Start Date', 'End Date', 'Customer Name']);
+            
+            // SHEET 2: Target Plan (targets only - no actuals in Actual tab report)
+            const targetSheet = [];
+            targetSheet.push(['ID', 'Sales Person Name', 'Branch', 'Start Date', 'End Date', 'Unit', 'Target']);
+            
+            // Process each filtered plan
+            filteredPlans.forEach(plan => {
+                let unitTargets = plan.unitTargets || [];
+                if (typeof unitTargets === 'string') {
+                    try { unitTargets = JSON.parse(unitTargets); } catch (e) { unitTargets = []; }
+                }
+                
+                let customers = plan.customers || [];
+                if (typeof customers === 'string') {
+                    try { customers = JSON.parse(customers); } catch (e) { customers = []; }
+                }
+                
+                const startDateStr = new Date(plan.startDate.toMillis ? plan.startDate.toMillis() : plan.startDate).toLocaleDateString('en-IN');
+                const endDateStr = new Date(plan.endDate.toMillis ? plan.endDate.toMillis() : plan.endDate).toLocaleDateString('en-IN');
+                
+                // Add customer data to Sheet 1 (just customer names - planning stage)
+                if (customers.length === 0) {
+                    customerSheet.push([plan.id, plan.salespersonName, plan.branch, startDateStr, endDateStr, '']);
+                } else {
+                    customers.forEach(customer => {
+                        customerSheet.push([
+                            plan.id,
+                            plan.salespersonName,
+                            plan.branch,
+                            startDateStr,
+                            endDateStr,
+                            customer.name || ''
+                        ]);
+                    });
+                }
+                
+                // Add unit data to Sheet 2 (targets only - no actuals)
+                UNITS.forEach(unit => {
+                    const ut = unitTargets.find(u => u.unit === unit);
+                    targetSheet.push([
+                        plan.id,
+                        plan.salespersonName,
+                        plan.branch,
+                        startDateStr,
+                        endDateStr,
+                        unit,
+                        ut ? ut.target : 0
+                    ]);
+                });
+            });
+            
+            // Helper function to convert array to CSV with proper escaping
+            const convertToCSV = (data) => {
+                return data.map(row => 
+                    row.map(cell => {
+                        const cellStr = String(cell || '');
+                        return cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n') 
+                            ? `"${cellStr.replace(/"/g, '""')}"` 
+                            : cellStr;
+                    }).join(',')
+                ).join('\n');
+            };
+            
+            // Create two CSV sections for both sheets
+            const sheet1CSV = convertToCSV(customerSheet);
+            const sheet2CSV = convertToCSV(targetSheet);
+            
+            // Combine both sheets with clear separation for CSV format
+            const fullContent = `Planning Report - ${currentMonth}\n${sheet1CSV}\n\n\nTarget Plan - ${currentMonth}\n${sheet2CSV}`;
+            
+            // Create and download as CSV file
+            const blob = new Blob([fullContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Planning_Report_${currentMonth}_${new Date().toISOString().slice(0, 10)}.csv`);
+            
+            document.body.appendChild(link); 
+            link.click();
+            document.body.removeChild(link);
+            
+            showModal('Success', `✅ Planning Report downloaded as CSV!\\n\\nSheet 1: Customer Planning List\\nSheet 2: Target Plan\\n\\nFilters Applied: ${state.filters.actual.employee || 'All Employees'}, ${state.filters.actual.month || 'All Months'}, ${state.filters.actual.year || 'All Years'}`);
+        };
+
+        // Save only the remark without completing the plan
+        window.saveCustomerRemark = async (index) => {
+            if (!state.actualDetails) return;
+            
+            try {
+                const customerRow = document.querySelector(`.customer-row[data-index="${index}"]`);
+                if (!customerRow) return;
+                
+                const nameInput = customerRow.querySelector('[name="customer-name"]');
+                const statusSelect = customerRow.querySelector('[name="visit-status"]');
+                const remarkTextarea = customerRow.querySelector('[name="remark"]');
+                
+                if (!nameInput || !statusSelect || !remarkTextarea) return;
+                
+                // Update the customer in state
+                if (state.actualDetails.customers[index]) {
+                    state.actualDetails.customers[index].name = nameInput.value;
+                    state.actualDetails.customers[index].visitStatus = statusSelect.value;
+                    state.actualDetails.customers[index].remark = remarkTextarea.value;
+                }
+                
+                // Save to Firestore - update only customers, don't mark as Completed
+                const planId = state.actualDetails.id;
+                const docRef = db.collection(`artifacts/${appId}/public/data/plans`).doc(planId);
+                
+                await docRef.update({
+                    customers: JSON.stringify(state.actualDetails.customers),
+                    updatedAt: firebase.firestore.Timestamp.now()
+                });
+                
+                showModal('Success', 'Customer remark saved successfully! Plan remains in Pending state.');
+            } catch (error) {
+                console.error("Error saving remark:", error);
+                showModal('Error', `Failed to save remark: ${error.message}`);
+            }
         };
 
         window.downloadCSVReport = () => {
@@ -2871,6 +3078,7 @@
             
             // Report Listener
             document.getElementById('download-report-csv')?.addEventListener('click', downloadCSVReport);
+            document.getElementById('download-planning-actual-csv')?.addEventListener('click', downloadPlanningVsActualCSV);
 
             // Dashboard Filter Listeners - apply on change
             document.getElementById('dash-employee')?.addEventListener('change', applyDashboardFilters);
