@@ -10,15 +10,42 @@ function calculateMetrics(unitTargets, unitActuals, customers) {
         throw new Error('customers must be an array');
     }
 
+    // Validate that arrays are not empty
+    if (unitTargets.length === 0) {
+        throw new Error('unitTargets array cannot be empty');
+    }
+    if (unitActuals.length === 0) {
+        throw new Error('unitActuals array cannot be empty');
+    }
+
+    // Validate that array elements are valid numbers
+    const validateNumberArray = (arr, name) => {
+        for (let i = 0; i < arr.length; i++) {
+            if (typeof arr[i] !== 'number' || isNaN(arr[i])) {
+                throw new Error(`${name}[${i}] must be a valid number, got ${arr[i]}`);
+            }
+        }
+    };
+
+    validateNumberArray(unitTargets, 'unitTargets');
+    validateNumberArray(unitActuals, 'unitActuals');
+
     // Proceed with calculations if all checks are passed
-    // Your existing calculation logic goes here
     let totalTargets = unitTargets.reduce((acc, target) => acc + target, 0);
     let totalActuals = unitActuals.reduce((acc, actual) => acc + actual, 0);
     let totalCustomers = customers.length;
 
+    // Calculate additional metrics
+    let averageTarget = totalTargets / unitTargets.length;
+    let averageActual = totalActuals / unitActuals.length;
+    let variance = ((averageActual - averageTarget) / averageTarget) * 100;
+
     return {
-        totalTargets,
-        totalActuals,
-        totalCustomers
+        totalTargets: Math.round(totalTargets * 100) / 100,
+        totalActuals: Math.round(totalActuals * 100) / 100,
+        totalCustomers,
+        averageTarget: Math.round(averageTarget * 100) / 100,
+        averageActual: Math.round(averageActual * 100) / 100,
+        variancePercentage: Math.round(variance * 100) / 100
     };
 }
