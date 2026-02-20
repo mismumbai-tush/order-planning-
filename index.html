@@ -46,10 +46,10 @@
         const UNITS = ['CKU', 'WARP', 'EMB', 'HOOK & EYE', 'ELASTIC', 'TLU', 'CROCHET', 'VAU', 'PRINTING', 'CUP'];
         const MAX_REMARK_LENGTH = 500;
 
-        // 🚨 !!! CRITICAL STEP: REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIGURATION !!! 🚨
+        // ðŸš¨ !!! CRITICAL STEP: REPLACE THESE WITH YOUR ACTUAL FIREBASE CONFIGURATION !!! ðŸš¨
         const appId = 'order-target-planning'; // Use the actual Project ID or a custom app ID
         const firebaseConfig = {
-            // 🛑 REPLACE THIS with the apiKey from your Firebase Project Settings
+            // ðŸ›‘ REPLACE THIS with the apiKey from your Firebase Project Settings
             apiKey: "AIzaSyCgkd0TylEP3JJmvl5x5lC6qNH3Ce0t_us", 
             authDomain: "order-target-planning.firebaseapp.com",
             projectId: "order-target-planning",
@@ -254,7 +254,7 @@
                     state.plans = [];
                     render();
                 } else {
-                    showModal('⚠️ Data Load Error', `Failed to load live data: ${error.message}\n\nCheck browser console (F12) for details.`);
+                    showModal('âš ï¸ Data Load Error', `Failed to load live data: ${error.message}\n\nCheck browser console (F12) for details.`);
                 }
             });
 
@@ -333,8 +333,7 @@
 
                 if (plan.customers) {
                     totalVisits += plan.customers.length;
-                    (Array.isArray(plan.customers) ? plan.customers : Object.values(plan.customers || {}))
-.forEach(c => {
+                    plan.customers.forEach(cust => {
                         allCustomers.add(cust.name);
                         const status = cust.visitStatus || 'Pending';
                         if (status === 'Visit Done') {
@@ -352,8 +351,7 @@
                     });
                 }
                 if (plan.unitTargets) {
-                    (Array.isArray(plan.unitTargets) ? plan.unitTargets : Object.values(plan.unitTargets || {}))
-.forEach(ut => {
+                    plan.unitTargets.forEach(ut => {
                         totalTarget += ut.target;
                         unitData[ut.unit] = unitData[ut.unit] || { target: 0, actual: 0 };
                         unitData[ut.unit].target += ut.target;
@@ -363,8 +361,7 @@
                     });
                 }
                 if (plan.unitActuals) {
-                    (Array.isArray(plan.unitActuals) ? plan.unitActuals : Object.values(plan.unitActuals || {}))
-.forEach(ua => {
+                    plan.unitActuals.forEach(ua => {
                         totalActual += ua.actual;
                         unitData[ua.unit] = unitData[ua.unit] || { target: 0, actual: 0 };
                         unitData[ua.unit].actual += ua.actual;
@@ -1076,7 +1073,7 @@
             // Get base plans accessible by user role
             let basePlans = filterPlansByRole(state.plans);
             
-            console.log("🔍 Employee Filter Applied:", {
+            console.log("ðŸ” Employee Filter Applied:", {
                 value: employeeValue,
                 allEmployees: [...new Set(basePlans.map(p => p.salespersonName))],
                 basePlansCount: basePlans.length
@@ -1087,7 +1084,7 @@
             if (!employeeValue && !branchFilter && !monthFilter && !yearFilter) {
                 // No filters selected - show all plans for this role
                 state.filteredPlans = basePlans;
-                console.log("📊 Dashboard: No filters selected - showing all", basePlans.length, "plans");
+                console.log("ðŸ“Š Dashboard: No filters selected - showing all", basePlans.length, "plans");
             } else {
                 // Filters selected - apply them
                 state.filteredPlans = basePlans.filter(p => {
@@ -1103,7 +1100,7 @@
                            (!monthFilter || planMonth === monthFilter) &&
                            (!yearFilter || planYear === yearFilter);
                 });
-                console.log("📊 Dashboard: Filters applied - showing", state.filteredPlans.length, "filtered plans", {
+                console.log("ðŸ“Š Dashboard: Filters applied - showing", state.filteredPlans.length, "filtered plans", {
                     employee: employeeValue,
                     branch: branchFilter,
                     month: monthFilter,
@@ -1365,8 +1362,8 @@
                     state.actualDetails.startDate = plan.startDate;
                     state.actualDetails.endDate = plan.endDate;
                     
-                    console.log("  ✅ Restored startDate:", state.actualDetails.startDate, "Type:", typeof state.actualDetails.startDate);
-                    console.log("  ✅ Restored endDate:", state.actualDetails.endDate, "Type:", typeof state.actualDetails.endDate);
+                    console.log("  âœ… Restored startDate:", state.actualDetails.startDate, "Type:", typeof state.actualDetails.startDate);
+                    console.log("  âœ… Restored endDate:", state.actualDetails.endDate, "Type:", typeof state.actualDetails.endDate);
                     
                     // Ensure unitActuals exists and is mapped to the current plan structure
                     if (!state.actualDetails.unitActuals || state.actualDetails.unitActuals.length === 0) {
@@ -1477,50 +1474,50 @@
                 try {
                     let date = null;
                     
-                    console.log("📅 getDateString input:", dateValue, "Type:", typeof dateValue);
+                    console.log("ðŸ“… getDateString input:", dateValue, "Type:", typeof dateValue);
                     
                     // If it's a Firestore Timestamp object with toDate() method
                     if (dateValue && typeof dateValue === 'object' && typeof dateValue.toDate === 'function') {
-                        console.log("  → Converting from Timestamp.toDate()");
+                        console.log("  â†’ Converting from Timestamp.toDate()");
                         date = dateValue.toDate();
                     }
                     // If it's a Firestore Timestamp object with toMillis() method
                     else if (dateValue && typeof dateValue === 'object' && typeof dateValue.toMillis === 'function') {
-                        console.log("  → Converting from Timestamp.toMillis()");
+                        console.log("  â†’ Converting from Timestamp.toMillis()");
                         date = new Date(dateValue.toMillis());
                     }
                     // If it's a plain object with _seconds (Firebase serialized timestamp)
                     else if (dateValue && typeof dateValue === 'object' && dateValue._seconds) {
-                        console.log("  → Converting from object._seconds:", dateValue._seconds);
+                        console.log("  â†’ Converting from object._seconds:", dateValue._seconds);
                         date = new Date(dateValue._seconds * 1000);
                     }
                     // If it's a plain object with seconds (alternate Firebase format)
                     else if (dateValue && typeof dateValue === 'object' && dateValue.seconds) {
-                        console.log("  → Converting from object.seconds:", dateValue.seconds);
+                        console.log("  â†’ Converting from object.seconds:", dateValue.seconds);
                         date = new Date(dateValue.seconds * 1000);
                     }
                     // If it's a string
                     else if (typeof dateValue === 'string') {
-                        console.log("  → Converting from string");
+                        console.log("  â†’ Converting from string");
                         date = new Date(dateValue);
                     }
                     // If it's already a Date
                     else if (dateValue instanceof Date) {
-                        console.log("  → Already a Date object");
+                        console.log("  â†’ Already a Date object");
                         date = dateValue;
                     }
                     // If it's a number (milliseconds or seconds)
                     else if (typeof dateValue === 'number') {
-                        console.log("  → Converting from number (assuming milliseconds)");
+                        console.log("  â†’ Converting from number (assuming milliseconds)");
                         date = new Date(dateValue);
                     }
                     
                     if (date && !isNaN(date.getTime())) {
                         const formatted = date.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                        console.log("  ✅ Formatted date:", formatted);
+                        console.log("  âœ… Formatted date:", formatted);
                         return formatted;
                     }
-                    console.log("  ❌ Could not create valid date");
+                    console.log("  âŒ Could not create valid date");
                     return 'N/A';
                 } catch (e) {
                     console.error("Error parsing date:", dateValue, e);
@@ -1615,7 +1612,7 @@
         
         const handleActualSubmit = async (e) => {
             e.preventDefault();
-            console.log("🔥 handleActualSubmit TRIGGERED!");
+            console.log("ðŸ”¥ handleActualSubmit TRIGGERED!");
             console.log("   Form ID:", e.target.id);
             console.log("   Form element:", e.target);
             
@@ -1632,11 +1629,11 @@
             try {
                 // DEBUG: Log the actual HTML of the form to see what we're working with
                 const formHTML = form.innerHTML;
-                console.log("📋 FORM HTML (first 1000 chars):", formHTML.substring(0, 1000));
+                console.log("ðŸ“‹ FORM HTML (first 1000 chars):", formHTML.substring(0, 1000));
                 
                 // Check for disabled inputs which would prevent form submission
                 const disabledInputs = form.querySelectorAll('[disabled]');
-                console.log("⚠️  Disabled inputs found:", disabledInputs.length);
+                console.log("âš ï¸  Disabled inputs found:", disabledInputs.length);
                 disabledInputs.forEach((input, idx) => {
                     console.log(`   Disabled ${idx}:`, input.name, "=", input.value, "tag:", input.tagName);
                 });
@@ -1644,7 +1641,7 @@
                 // 1. Extract Customer Actuals
                 const customerRowsSelector = isModal ? '#modal-actual-customer-list .customer-row' : '#actual-customer-list .customer-row';
                 const customerRows = document.querySelectorAll(customerRowsSelector);
-                console.log("🔍 Looking for customer rows with selector:", customerRowsSelector);
+                console.log("ðŸ” Looking for customer rows with selector:", customerRowsSelector);
                 console.log("Found customer rows:", customerRows.length);
                 
                 // DEBUG: Log each customer row's HTML
@@ -1677,11 +1674,11 @@
                         remark: remarkTextarea?.value || '',
                         isNew: nameInput?.hasAttribute('data-is-new') ? (nameInput.getAttribute('data-is-new') === 'true') : false
                     };
-                    console.log("  ✅ Customer extracted:", JSON.stringify(customerData));
+                    console.log("  âœ… Customer extracted:", JSON.stringify(customerData));
                     return customerData;
                 }).filter(c => c.name.trim() !== '');  // CRITICAL: Only save customers that have at least a name entered
 
-                console.log("✅ Total customers to save (with names):", actualCustomers.length, "| Full array:", JSON.stringify(actualCustomers));
+                console.log("âœ… Total customers to save (with names):", actualCustomers.length, "| Full array:", JSON.stringify(actualCustomers));
 
                 // Check if all planned customers have been accounted for (or check if at least one status is 'Visit Done' to mark as completed)
                 const isPlanCompleted = actualCustomers.some(c => c.visitStatus === 'Visit Done' || c.visitStatus === 'Not Visit');
@@ -1691,7 +1688,7 @@
                 const targetInputSelector = isModal ? '.modal-target-input' : '.target-input';
                 const tableSelector = isModal ? '#modal-unit-actual-table-body' : '#unit-actual-table-body';
                 const unitActualInputs = document.querySelectorAll(`${tableSelector} ${inputSelector}`);
-                console.log("🔍 Looking for unit inputs with selector:", `${tableSelector} ${inputSelector}`);
+                console.log("ðŸ” Looking for unit inputs with selector:", `${tableSelector} ${inputSelector}`);
                 console.log("Found unit inputs:", unitActualInputs.length);
                 
                 // DEBUG: Log each unit input value
@@ -1713,10 +1710,10 @@
                     return unitData;
                 });
 
-                console.log("✅ Total units to save:", unitActuals.length, unitActuals);
+                console.log("âœ… Total units to save:", unitActuals.length, unitActuals);
                 
                 // CRITICAL CHECK: Warn if saving with no customer data
-                if (actualCustomers.length === 0 && !confirm("⚠️  No customers with names entered! You are about to save ONLY unit actual values with NO customer visit data. \n\nPress OK to continue, or Cancel to go back and add customer names.")) {
+                if (actualCustomers.length === 0 && !confirm("âš ï¸  No customers with names entered! You are about to save ONLY unit actual values with NO customer visit data. \n\nPress OK to continue, or Cancel to go back and add customer names.")) {
                     console.warn("User cancelled save - no customer data");
                     state.loading = false;
                     render();
@@ -1724,7 +1721,7 @@
                 }
                 
                 // Log what we're about to save
-                console.log("📤 ABOUT TO SAVE TO FIRESTORE:");
+                console.log("ðŸ“¤ ABOUT TO SAVE TO FIRESTORE:");
                 console.log("   Customers JSON:", JSON.stringify(actualCustomers));
                 console.log("   Unit Actuals JSON:", JSON.stringify(unitActuals));
                 console.log("   Status: Completed");
@@ -1740,7 +1737,7 @@
                 // This ensures the plan moves to Completed status and is removed from Actual tab
                 updateData.status = 'Completed';
 
-                console.log("💾 BEFORE Firestore update:");
+                console.log("ðŸ’¾ BEFORE Firestore update:");
                 console.log("   updateData.customers:", updateData.customers);
                 console.log("   updateData.unitActuals:", updateData.unitActuals);
                 console.log("   updateData.status:", updateData.status);
@@ -1748,13 +1745,13 @@
                 console.log("   FULL updateData object:", updateData);
 
                 const docRef = db.collection(`artifacts/${appId}/public/data/plans`).doc(planId);
-                console.log("📝 Attempting Firestore update for planId:", planId);
+                console.log("ðŸ“ Attempting Firestore update for planId:", planId);
                 
                 try {
                     await docRef.update(updateData);
-                    console.log("✅ Firestore update completed successfully");
+                    console.log("âœ… Firestore update completed successfully");
                 } catch (firebaseError) {
-                    console.error("❌ FIRESTORE UPDATE ERROR:");
+                    console.error("âŒ FIRESTORE UPDATE ERROR:");
                     console.error("   Error Code:", firebaseError.code);
                     console.error("   Error Message:", firebaseError.message);
                     console.error("   Full Error:", firebaseError);
@@ -1770,7 +1767,7 @@
                 state.actualDetails = null;
                 state.filteredPlans = []; // Clear filtered plans so they reload
                 
-                console.log("✅ Actual data saved to Firestore");
+                console.log("âœ… Actual data saved to Firestore");
                 console.log("Saved data - Customers:", JSON.stringify(actualCustomers));
                 console.log("Saved data - Unit Actuals:", JSON.stringify(unitActuals));
                 
@@ -1779,15 +1776,15 @@
                 // Wait for Firestore listener to update state.plans before navigating
                 // The listener is real-time, but we give it a moment to receive the update
                 setTimeout(() => {
-                    console.log("📊 Current state.plans after waiting:", state.plans.length, "plans");
-                    console.log("🔍 Plans with 'Completed' status:", state.plans.filter(p => p.status === 'Completed').length);
+                    console.log("ðŸ“Š Current state.plans after waiting:", state.plans.length, "plans");
+                    console.log("ðŸ” Plans with 'Completed' status:", state.plans.filter(p => p.status === 'Completed').length);
                     const completedPlan = state.plans.find(p => p.id === planId);
                     if (completedPlan) {
-                        console.log("✅ Completed plan found:", completedPlan);
+                        console.log("âœ… Completed plan found:", completedPlan);
                         console.log("   Customers:", completedPlan.customers);
                         console.log("   Unit Actuals:", completedPlan.unitActuals);
                     } else {
-                        console.log("❌ Completed plan NOT found in state.plans");
+                        console.log("âŒ Completed plan NOT found in state.plans");
                     }
                     closeModal();
                     // Navigate to Report tab to see the completed plan with data
@@ -1796,7 +1793,7 @@
                 }, 2000);
 
             } catch (error) {
-                console.error("❌ ACTUAL SUBMISSION FAILED:");
+                console.error("âŒ ACTUAL SUBMISSION FAILED:");
                 console.error("   Error Message:", error.message);
                 console.error("   Error Code:", error.code);
                 console.error("   Full Error:", error);
@@ -1857,8 +1854,8 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
-                        ${renderKPICard('Total Target (Rs)', formatDisplayValue(metrics.totalTarget, state.displayFormat), 'text-primary', '₹')}
-                        ${renderKPICard('Total Actual (Rs)', formatDisplayValue(metrics.totalActual, state.displayFormat), 'text-green-600', '₹')}
+                        ${renderKPICard('Total Target (Rs)', formatDisplayValue(metrics.totalTarget, state.displayFormat), 'text-primary', 'â‚¹')}
+                        ${renderKPICard('Total Actual (Rs)', formatDisplayValue(metrics.totalActual, state.displayFormat), 'text-green-600', 'â‚¹')}
                         ${renderKPICard('Achievement (%)', achievement, achievement >= 100 ? 'text-green-600' : 'text-red-500', '%')}
                         ${renderKPICard('Active Sales Person', metrics.activeSalespersonsCount, 'text-blue-600')}
                         ${renderKPICard('Active Branches', metrics.activeBranchesCount, 'text-purple-600')}
@@ -1923,7 +1920,7 @@
             const userRole = state.userProfile?.role;
             const userBranch = state.userProfile?.branch;
             
-            console.log("📋 Employee Names Available:", employeeNames);
+            console.log("ðŸ“‹ Employee Names Available:", employeeNames);
             
             let filterOptions = [];
             if (userRole === 'Branch Head') {
@@ -2162,7 +2159,7 @@
         // --- REPORT UI & DOWNLOAD ---
 
         const renderReport = () => {
-            console.log("📊 renderReport() called");
+            console.log("ðŸ“Š renderReport() called");
             console.log("   state.plans total:", state.plans ? state.plans.length : 0);
             console.log("   state.filteredPlans:", state.filteredPlans);
             
@@ -2388,7 +2385,7 @@
         };
 
         const renderReportDetailsContent = (plan) => {
-            console.log("📋 Rendering Report Details for plan:", plan.id);
+            console.log("ðŸ“‹ Rendering Report Details for plan:", plan.id);
             console.log("   Raw plan data:", plan);
             
             // Helper function to parse dates
@@ -2667,7 +2664,7 @@
             link.click();
             document.body.removeChild(link);
             
-            showModal('Success', `✅ Planning Report downloaded as CSV!\\n\\nSheet 1: Customer Planning List\\nSheet 2: Target Plan\\n\\nFilters Applied: ${state.filters.actual.employee || 'All Employees'}, ${state.filters.actual.month || 'All Months'}, ${state.filters.actual.year || 'All Years'}`);
+            showModal('Success', `âœ… Planning Report downloaded as CSV!\\n\\nSheet 1: Customer Planning List\\nSheet 2: Target Plan\\n\\nFilters Applied: ${state.filters.actual.employee || 'All Employees'}, ${state.filters.actual.month || 'All Months'}, ${state.filters.actual.year || 'All Years'}`);
         };
 
         // Save only the remark without completing the plan
@@ -3074,7 +3071,7 @@
                     }
                 }, true); // Use capture phase to catch the event
                 window.actualFormListenerAttached = true;
-                console.log("✅ Actual form submit listener attached (using event delegation)");
+                console.log("âœ… Actual form submit listener attached (using event delegation)");
             }
             
             document.getElementById('add-customer-modal-btn')?.addEventListener('click', () => addCustomerRow(true));
@@ -3124,5 +3121,3 @@
     </script>
 </body>
 </html>
-
-
