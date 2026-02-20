@@ -1,38 +1,9 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <title>Dashboard</title>
-</head>
-<body>
-    <header>
-        <h1>Dashboard</h1>
-    </header>
-    <main>
-        <section>
-            <form id="dataInputForm">
-                <label for="inputData">Input Data:</label>
-                <input type="text" id="inputData" name="inputData" required>
-                <button type="submit">Calculate Metrics</button>
-            </form>
-            <div id="results"></div>
-        </section>
-    </main>
-    <script>
-        function calculateMetrics(data) {
-            // Logic to calculate metrics based on input data
-            const resultElement = document.getElementById('results');
-            const metrics = `Metrics calculated for: ${data}`; // Example calculation logic
-            resultElement.innerHTML = metrics;
-        }
-
-        document.getElementById('dataInputForm').addEventListener('submit', function(event) {
-            event.preventDefault();  
-            const inputData = document.getElementById('inputData').value;
-            calculateMetrics(inputData);
-        });
-    </script>
-</body>
-</html>
+function calculateMetrics(data) {
+    if (!data || typeof data !== 'object') {
+        throw new Error('Invalid data: Data must be an object.');
+    }
+    if (!data.metrics || !Array.isArray(data.metrics)) {
+        throw new Error('Invalid metrics: Metrics must be an array.');
+    }
+    // Further processing of metrics would go here...
+}
