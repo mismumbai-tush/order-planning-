@@ -333,7 +333,8 @@
 
                 if (plan.customers) {
                     totalVisits += plan.customers.length;
-                    plan.customers.forEach(cust => {
+                    (Array.isArray(plan.customers) ? plan.customers : Object.values(plan.customers || {}))
+.forEach(c => {
                         allCustomers.add(cust.name);
                         const status = cust.visitStatus || 'Pending';
                         if (status === 'Visit Done') {
@@ -351,7 +352,8 @@
                     });
                 }
                 if (plan.unitTargets) {
-                    plan.unitTargets.forEach(ut => {
+                    (Array.isArray(plan.unitTargets) ? plan.unitTargets : Object.values(plan.unitTargets || {}))
+.forEach(ut => {
                         totalTarget += ut.target;
                         unitData[ut.unit] = unitData[ut.unit] || { target: 0, actual: 0 };
                         unitData[ut.unit].target += ut.target;
@@ -361,7 +363,8 @@
                     });
                 }
                 if (plan.unitActuals) {
-                    plan.unitActuals.forEach(ua => {
+                    (Array.isArray(plan.unitActuals) ? plan.unitActuals : Object.values(plan.unitActuals || {}))
+.forEach(ua => {
                         totalActual += ua.actual;
                         unitData[ua.unit] = unitData[ua.unit] || { target: 0, actual: 0 };
                         unitData[ua.unit].actual += ua.actual;
@@ -3121,4 +3124,5 @@
     </script>
 </body>
 </html>
+
 
